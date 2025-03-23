@@ -70,6 +70,18 @@
 
 ---
 
+## Limitations
+FX-Rshell is not a real C2, so it can only run one listener per port.
+However, a single listener can handle multiple reverse shells from different systems.
+
+### Example:
+Listener on port 4444 → Windows client
+Listener on port 4444 → Linux client
+
+---
+
+---
+
 ## 🛠️ Setup & Running
 
 ### Prerequisites
