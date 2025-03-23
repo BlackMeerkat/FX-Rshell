@@ -1,7 +1,0 @@
-- Ajouter nouveau menu bar "loot"
-- crée un nouveau gui pour afficher tout les fichier télécharger depuis la command line download
-- Dans le gui loot ajouter un bouton pour ouvrire l'explorer de fichier ou sont stocker les fichiers
-- stocker les fichier download dans un dossier loot a la racine du projet
-- Crée un nouveau sous menu quand on click droits sur un des client dans le tableau a gauche "Tree"
-- quand on click sur tree ça crée un nouvel onglet avec le nom du client + Tree
-- ça présent l'arborésence des fichier du client en méttant a jours en cliquant sur les différent dossier via un dir pour présenter les fichier et sous dossier
