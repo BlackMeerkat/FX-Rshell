@@ -1420,12 +1420,30 @@ public class Main extends Application {
 
     @Override
     public void start(Stage stage) {
-        // Create the output directory if it doesn't exist
+        // Créer le dossier tmp s'il n'existe pas
         try {
-            Files.createDirectories(Paths.get("output"));
+            Files.createDirectories(Paths.get("tmp"));
         } catch (IOException e) {
-            System.err.println("Failed to create output directory: " + e.getMessage());
+            System.err.println("Failed to create tmp directory: " + e.getMessage());
         }
+
+        // Nettoyer le dossier tmp à la fermeture
+        stage.setOnCloseRequest(event -> {
+            // Arrêter tous les serveurs
+            for (Process process : serverProcesses) {
+                process.destroy();
+            }
+            
+            // Nettoyer le dossier tmp
+            try {
+                Files.walk(Paths.get("tmp"))
+                    .sorted(java.util.Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
+            } catch (IOException e) {
+                System.err.println("Failed to clean tmp directory: " + e.getMessage());
+            }
+        });
         
         // Ajouter la feuille de style globale
         String cssFile = "res/styles/table-styles.css";
@@ -1730,27 +1748,91 @@ public class Main extends Application {
             ProcessBuilder pb;
             String serverType = isDownloadServer ? "Download" : "Upload";
             if (isDownloadServer) {
-                pb = new ProcessBuilder("python3", "-c", 
-                    "from http.server import BaseHTTPRequestHandler, HTTPServer; " +
-                    "class DownloadHandler(BaseHTTPRequestHandler): " +
-                    "    def do_GET(self): " +
-                    "        self.send_response(200); " +
-                    "        self.send_header('Content-type', 'application/octet-stream'); " +
-                    "        self.end_headers(); " +
-                    "        with open('" + fileLocation + "', 'rb') as file: " +
-                    "            self.wfile.write(file.read()); " +
-                    "if __name__ == '__main__': " +
-                    "    server_address = ('" + ip + "', " + port + "); " +
-                    "    httpd = HTTPServer(server_address, DownloadHandler); " +
-                    "    print('[+] Listening on http://" + ip + ":" + port + "/download'); " +
-                    "    httpd.serve_forever();"
-                );
+                String pythonScript = 
+                    "from http.server import BaseHTTPRequestHandler, HTTPServer\n" +
+                    "import os\n" +
+                    "import cgi\n" +
+                    "\n" +
+                    "class DownloadHandler(BaseHTTPRequestHandler):\n" +
+                    "    def do_GET(self):\n" +
+                    "        try:\n" +
+                    "            file_path = '" + fileLocation + "'\n" +
+                    "            if not os.path.exists(file_path):\n" +
+                    "                self.send_error(404, 'File not found')\n" +
+                    "                return\n" +
+                    "            self.send_response(200)\n" +
+                    "            self.send_header('Content-type', 'application/octet-stream')\n" +
+                    "            self.send_header('Content-Disposition', 'attachment; filename=\"' + os.path.basename(file_path) + '\"')\n" +
+                    "            self.end_headers()\n" +
+                    "            with open(file_path, 'rb') as file:\n" +
+                    "                self.wfile.write(file.read())\n" +
+                    "        except Exception as e:\n" +
+                    "            print(f'Error serving file: {str(e)}')\n" +
+                    "            self.send_error(500, 'Internal server error')\n" +
+                    "\n" +
+                    "    def do_POST(self):\n" +
+                    "        try:\n" +
+                    "            file_path = os.path.join('" + fileLocation + "', os.path.basename(self.path))\n" +
+                    "            content_length = int(self.headers['Content-Length'])\n" +
+                    "            print(f'[+] Receiving file: {os.path.basename(self.path)}')\n" +
+                    "            print(f'[+] Content length: {content_length} bytes')\n" +
+                    "\n" +
+                    "            with open(file_path, 'wb') as output_file:\n" +
+                    "                data = self.rfile.read(content_length)\n" +
+                    "                output_file.write(data)\n" +
+                    "\n" +
+                    "            self.send_response(200)\n" +
+                    "            self.send_header('Content-type', 'text/html')\n" +
+                    "            self.end_headers()\n" +
+                    "            self.wfile.write(b'File uploaded successfully')\n" +
+                    "            print(f'[+] File saved as: {file_path}')\n" +
+                    "\n" +
+                    "        except Exception as e:\n" +
+                    "            print(f'[-] Error receiving file: {str(e)}')\n" +
+                    "            self.send_error(500, 'Internal server error')\n" +
+                    "\n" +
+                    "if __name__ == '__main__':\n" +
+                    "    server_address = ('" + ip + "', " + port + ")\n" +
+                    "    try:\n" +
+                    "        httpd = HTTPServer(server_address, DownloadHandler)\n" +
+                    "        print(f'[+] Download/Upload server started on http://" + ip + ":" + port + "')\n" +
+                    "        print(f'[+] Serving directory: " + fileLocation + "')\n" +
+                    "        httpd.serve_forever()\n" +
+                    "    except Exception as e:\n" +
+                    "        print(f'[-] Server error: {str(e)}')\n";
+                
+                // Écrire le script dans un fichier temporaire dans le dossier tmp
+                String tempScript = "tmp/download_server_" + port + ".py";
+                try (FileOutputStream fos = new FileOutputStream(tempScript)) {
+                    fos.write(pythonScript.getBytes());
+                }
+                
+                // Exécuter le script Python
+                pb = new ProcessBuilder("python3", tempScript);
             } else {
                 pb = new ProcessBuilder("python3", "-m", "http.server", String.valueOf(port), "-d", fileLocation);
             }
+            
+            // Rediriger la sortie d'erreur vers la sortie standard
+            pb.redirectErrorStream(true);
+            
             Process process = pb.start();
             serverProcesses.add(process);
             serverList.add(new ServerEntry(ip, port, serverType, "Python", fileLocation, "Running"));
+            
+            // Créer un thread pour lire la sortie du processus
+            new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        final String logLine = line;
+                        Platform.runLater(() -> logMessage(logLine));
+                    }
+                } catch (IOException e) {
+                    Platform.runLater(() -> logMessage("[-] Server process error: " + e.getMessage()));
+                }
+            }).start();
+            
             logMessage("[+] Server started on " + ip + ":" + port);
         } catch (IOException e) {
             logMessage("[-] Failed to start server: " + e.getMessage());
