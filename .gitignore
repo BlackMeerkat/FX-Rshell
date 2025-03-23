@@ -1,0 +1,33 @@
+# --- Java build
+out/
+*.class
+
+# --- IDE / IntelliJ
+.idea/
+*.iml
+
+# --- Payloads generated at runtime
+output/*
+!output/.gitkeep
+
+# --- JavaFX SDK if downloaded manually
+javafx-sdk*/
+openjfx-*.zip
+
+# --- Temp / backup
+*.bak
+temp_*.php
+
+# --- System / Editor files
+.DS_Store
+Thumbs.db
+
+# --- Logs
+*.log
+
+# --- ⚠️ KEEP STATIC PAYLOAD TEMPLATES
+# These are source templates, do NOT ignore them:
+!res/payloads/client.c
+!res/payloads/client.go
+!res/payloads/client.rs
+!res/payloads/client.php
