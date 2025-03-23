@@ -1,105 +1,195 @@
 # FX-Rshell
 
-FX-Rshell is a JavaFX-based command-and-control interface for managing remote shells in a tabbed, centralized environment.
+```
+8888888888 Y88b   d88P       8888888b.   .d8888b.  888               888 888 
+888         Y88b d88P        888   Y88b d88P  Y88b 888               888 888 
+888          Y88o88P         888    888 Y88b.      888               888 888 
+8888888       Y888P          888   d88P  "Y888b.   88888b.   .d88b.  888 888 
+888           d888b          8888888P"      "Y88b. 888 "88b d8P  Y8b 888 888 
+888          d88888b  888888 888 T88b         "888 888  888 88888888 888 888 
+888         d88P Y88b        888  T88b  Y88b  d88P 888  888 Y8b.     888 888 
+888        d88P   Y88b       888   T88b  "Y8888P"  888  888  "Y8888  888 888 
+                    FX-Rshell - JavaFX Reverse Shell Manager
+```
+
+![JavaFX](https://img.shields.io/badge/JavaFX-%23ed8b00.svg?style=for-the-badge&logo=java&logoColor=white)
+![Made With ❤️](https://img.shields.io/badge/Made%20with-%E2%9D%A4-red?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Prototype-orange?style=for-the-badge)
+![License](https://img.shields.io/badge/License-Hacker%20Style-lightgrey?style=for-the-badge)
+
+---
+
+## FX-Rshell
+
+**FX-Rshell** is a JavaFX-based reverse shell interface for managing multiple remote shells in a centralized, tabbed UI.  
+The goal? Build a fully custom server-side command line to bypass Windows Defender and reduce detection.
+
+> ⚠️ No OPSEC here — it's dirty, noisy, and triggers all kinds of events on the target machine.
+
+---
 
 ## Features
 
-### Listener Management
-- Create TCP listeners on custom ports
-- View and manage active listeners
+### 🎧 Listener Management
+
+- Create TCP listeners on custom ports  
+- View and manage active listeners  
 - Automatically handle incoming connections
 
-### Shell Management
-- Track multiple connected shells in a centralized table
-- View connection details (IP, username, hostname, OS)
-- Interact with shells in individual tabs
-- Kill shells with a right-click
+### 👚 Shell Management
 
-### Payloads
-- Generate reverse shell payloads in multiple languages (Go, C, Rust)
-- Configure payloads for different operating systems (Windows/Linux)
-- Select target architecture (32/64 bits)
-- Compile directly from the application
+- Track multiple shells in a central table  
+- View connection details (IP, username, hostname, OS)  
+- Interact with each shell in its own tab  
+- Right-click to kill a shell
 
-### Console
-- Tabbed interface for each shell session
-- Command history per session
-- Up/down arrow key navigation through command history
-- Visual separators between commands and their output
+### 💣 Payload Generator
 
-## Setup & Running
+- Generate reverse shell payloads in Go, C, or Rust  
+- Configure for Windows or Linux targets  
+- Select 32/64-bit architectures  
+- Compile directly where you need it
+
+### 🖥️ Shell Console
+
+- Tabbed interface per shell session  
+- Command history per shell  
+- Navigate history with arrow keys  
+- Visual separation between input and output
+
+### 🌐 Server Manager
+
+- Create an HTTP Python server to upload files to the target  
+- Create an HTTP Python server to download files from the target
+
+### ⚙️ Custom Server-Side Command Line
+
+- `upload`  
+- `download`
+
+---
+
+## 🛠️ Setup & Running
 
 ### Prerequisites
-- Java 11+
-- JavaFX
+
+- Java 11+  
+- JavaFX  
 
 ### Compiler Dependencies
-To generate and compile payloads, you'll need:
 
-#### For Go Payloads
-- Go compiler (1.13+)
-  - Ubuntu/Debian: `sudo apt install golang-go`
-  - Fedora: `sudo dnf install golang`
-  - Arch: `sudo pacman -S go`
-  - Windows: Download from https://golang.org/dl/
+#### Go Payloads
 
-#### For C Payloads
-- GCC compiler
-  - Ubuntu/Debian: `sudo apt install gcc gcc-multilib`
-  - Fedora: `sudo dnf install gcc glibc-devel.i686 libgcc.i686`
-  - Arch: `sudo pacman -S gcc lib32-gcc-libs`
-  - Windows: MinGW (http://mingw-w64.org/doku.php/download)
+- Go 1.13+
 
-- For Windows cross-compilation on Linux:
-  - Ubuntu/Debian: `sudo apt install mingw-w64`
-  - Fedora: `sudo dnf install mingw64-gcc mingw32-gcc`
-  - Arch: `sudo pacman -S mingw-w64-gcc`
-
-#### For Rust Payloads
-- Rust toolchain (cargo, rustc)
-  - All platforms: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
-  - Windows: Download from https://www.rust-lang.org/tools/install
-
-- For cross-compilation support:
-  ```bash
-  # Add 32-bit Linux target
-  rustup target add i686-unknown-linux-gnu
-  
-  # Add Windows targets
-  rustup target add x86_64-pc-windows-gnu
-  rustup target add i686-pc-windows-gnu
-  
-  # For 32-bit Linux target on Debian/Ubuntu
-  sudo apt install gcc-multilib
-  ```
-
-### Building from Source
 ```bash
-# Compile the Java files
-javac -d bin src/*.java
+# Ubuntu/Debian
+sudo apt install golang-go
 
-# Run the application
+# Fedora
+sudo dnf install golang
+
+# Arch
+sudo pacman -S go
+```
+
+- [Windows installer](https://golang.org/dl/)
+
+#### C Payloads
+
+- GCC
+
+```bash
+# Ubuntu/Debian
+sudo apt install gcc gcc-multilib
+
+# Fedora
+sudo dnf install gcc glibc-devel.i686 libgcc.i686
+
+# Arch
+sudo pacman -S gcc lib32-gcc-libs
+```
+
+- Windows: [MinGW](http://mingw-w64.org/doku.php/download)
+
+```bash
+# Cross-compilation for Windows from Linux:
+# Ubuntu/Debian
+sudo apt install mingw-w64
+
+# Fedora
+sudo dnf install mingw64-gcc mingw32-gcc
+
+# Arch
+sudo pacman -S mingw-w64-gcc
+```
+
+#### Rust Payloads
+
+- Rust toolchain (`cargo`, `rustc`)
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+- [Windows installer](https://www.rust-lang.org/tools/install)
+
+```bash
+# Add cross targets
+rustup target add i686-unknown-linux-gnu
+rustup target add x86_64-pc-windows-gnu
+rustup target add i686-pc-windows-gnu
+
+# For Linux 32-bit builds
+sudo apt install gcc-multilib
+```
+
+---
+
+## 🧱 Building from Source
+
+```bash
+javac -d bin src/*.java
 java -cp bin Main
 ```
 
-## Usage
+---
 
-1. Start the application
-2. Create a listener (Listeners > Create Listener)
-3. Generate a payload (Payloads > Choose language)
-4. Execute the payload on a target system
-5. Once connected, the shell will appear in the left panel
-6. Double-click or right-click > Interact to open a console tab
-7. Enter commands in the console tab's input field
+## 🪪 Usage
 
-## Shell Commands
-The shell supports all standard commands available in the target system's shell:
-- Windows: cmd.exe commands
-- Linux: bash/sh commands
+1. Launch the app  
+2. Create a listener (`Listeners > Create Listener`)  
+3. Generate a payload (`Payloads > Choose Language`)  
+4. Run the payload on a target machine  
+5. When connected, the shell appears in the left panel  
+6. Right-click > Interact or double-click to open a console  
+7. Type commands 🚀  
 
-## Notes
+---
 
-- All payloads are generated in the `output` directory
-- Compilation output provides error messages and success indicators
-- All connections are unencrypted by default
-- Each shell includes metadata about the connected system 
+## 💬 Shell Commands
+
+Supports:
+
+- Windows: `cmd.exe`  
+- Linux: `bash` / `sh`
+
+---
+
+## 📁 Notes
+
+- Payloads saved in `output/`  
+- Compilation feedback shown in UI  
+- No encryption (yet)  
+- Metadata shown per shell  
+
+---
+
+## 🤡 Special Thanks
+
+- That one tweet that inspired simplification  
+- Me, for starting this in 30 min  
+- ChatGPT, for 1h of fuel  
+- Cursor, for doing most of the work  
+- Copilot, for reminding me Cursor > Copilot
+
