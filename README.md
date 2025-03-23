@@ -77,9 +77,9 @@ However, a single listener can handle multiple reverse shells from different sys
 
 ### Example:
 Listener on port 4444 → Windows client
-Listener on port 4444 → Linux client
 
----
+
+Listener on port 4444 → Linux client
 
 ---
 
