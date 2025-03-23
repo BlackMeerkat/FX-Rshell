@@ -15,6 +15,7 @@
 ![JavaFX](https://img.shields.io/badge/JavaFX-%23ed8b00.svg?style=for-the-badge&logo=java&logoColor=white)
 ![Made With ❤️](https://img.shields.io/badge/Made%20with-%E2%9D%A4-red?style=for-the-badge)
 ![Status](https://img.shields.io/badge/Status-Prototype-orange?style=for-the-badge)
+![Tested on Kali Linux](https://img.shields.io/badge/Tested%20on-Kali%20Linux-557C94?style=for-the-badge&logo=kalilinux&logoColor=white)
 
 ---
 
@@ -38,7 +39,7 @@ The goal is to use only very basic reverse shell clients, and implement all cust
 - View and manage active listeners  
 - Automatically handle incoming connections
 
-### 👚 Shell Management
+### 🐚 Shell Management
 
 - Track multiple shells in a central table  
 - View connection details (IP, username, hostname, OS)  
@@ -163,8 +164,7 @@ sudo apt install gcc-multilib
 ## 🧱 Building from Source
 
 ```bash
-javac -d bin src/*.java
-java -cp bin Main
+./fxrshell-run.sh
 ```
 
 ---
