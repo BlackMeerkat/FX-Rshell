@@ -580,14 +580,12 @@ public class ConsoleTab extends Tab {
         stageDownload.setMinWidth(500);
         stageDownload.setMinHeight(350);
         
-        Label serverLabel = new Label("Select Download Server");
+        Label serverLabel = new Label("Select HTTP Server");
         serverLabel.setStyle("-fx-text-fill: " + DRACULA_CYAN + "; -fx-font-weight: bold;");
         
-        // Filtrer uniquement les serveurs de type Download
+        // Afficher tous les serveurs HTTP
         ComboBox<Main.ServerEntry> serverComboBox = new ComboBox<>();
-        serverComboBox.setItems(FXCollections.observableArrayList(
-            mainApp.getServerList().filtered(server -> "Download".equals(server.getType()))
-        ));
+        serverComboBox.setItems(mainApp.getServerList());
         serverComboBox.setPrefWidth(300);
         
         // Améliorer l'affichage des serveurs dans la ComboBox
@@ -598,7 +596,7 @@ public class ConsoleTab extends Tab {
                 if (empty || item == null) {
                     setText(null);
                 } else {
-                    setText(item.getIp() + ":" + item.getPort());
+                    setText(item.getIp() + ":" + item.getPort() + " - " + item.getFileLocation());
                 }
             }
         });
@@ -610,7 +608,7 @@ public class ConsoleTab extends Tab {
                 if (empty || item == null) {
                     setText(null);
                 } else {
-                    setText(item.getIp() + ":" + item.getPort());
+                    setText(item.getIp() + ":" + item.getPort() + " - " + item.getFileLocation());
                 }
             }
         });
@@ -638,12 +636,33 @@ public class ConsoleTab extends Tab {
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Save File As");
             
-            // Si un nom de fichier distant est spécifié, l'utiliser comme nom par défaut
+            // Récupérer le serveur sélectionné pour le répertoire initial
+            Main.ServerEntry selectedServer = serverComboBox.getSelectionModel().getSelectedItem();
+            
+            // Extraire le nom du fichier du chemin distant
+            String fileName = "";
             String remoteFile = filePathField.getText().trim();
             if (!remoteFile.isEmpty()) {
-                String fileName = new File(remoteFile).getName();
-                fileChooser.setInitialFileName(fileName);
+                fileName = new File(remoteFile).getName();
             }
+            
+            // Définir le répertoire initial comme celui du serveur HTTP
+            if (selectedServer != null) {
+                File initialDirectory = new File(selectedServer.getFileLocation());
+                if (initialDirectory.exists() && initialDirectory.isDirectory()) {
+                    fileChooser.setInitialDirectory(initialDirectory);
+                    
+                    // Si on a un nom de fichier, le définir comme nom initial
+                    if (!fileName.isEmpty()) {
+                        fileChooser.setInitialFileName(fileName);
+                    }
+                }
+            }
+            
+            // Configurer les filtres pour tous les fichiers
+            fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("All Files", "*.*")
+            );
             
             File selectedFile = fileChooser.showSaveDialog(stageDownload);
             if (selectedFile != null) {
@@ -659,13 +678,31 @@ public class ConsoleTab extends Tab {
             String localPath = saveLocationField.getText().trim();
             
             if (selectedServer != null && !remotePath.isEmpty() && !localPath.isEmpty()) {
-                String command = String.format(
-                    "powershell Invoke-WebRequest -Uri \"http://%s:%d/%s\" -Method POST -InFile \"%s\" -ContentType \"application/octet-stream\"",
-                    selectedServer.getIp(),
-                    selectedServer.getPort(),
-                    new File(remotePath).getName(),
-                    remotePath
-                );
+                String command;
+                String os = session.getOs().toLowerCase();
+                
+                if (os.contains("win")) {
+                    // Extraire juste le nom du fichier du chemin distant
+                    String fileName = new File(remotePath).getName();
+                    command = String.format(
+                        "powershell Invoke-WebRequest -Uri \"http://%s:%d/%s\" -Method POST -InFile \"%s\" -ContentType \"application/octet-stream\"",
+                        selectedServer.getIp(),
+                        selectedServer.getPort(),
+                        fileName,
+                        remotePath
+                    );
+                } else {
+                    // Pour Linux/Unix, utiliser wget ou curl
+                    command = String.format(
+                        "if command -v wget > /dev/null; then " +
+                        "wget -O \"%s\" \"http://%s:%d/%s\"; " +
+                        "elif command -v curl > /dev/null; then " +
+                        "curl -o \"%s\" \"http://%s:%d/%s\"; " +
+                        "else echo 'Neither wget nor curl is available'; fi",
+                        localPath, selectedServer.getIp(), selectedServer.getPort(), new File(remotePath).getName(),
+                        localPath, selectedServer.getIp(), selectedServer.getPort(), new File(remotePath).getName()
+                    );
+                }
                 
                 sendCommand(command);
                 stageDownload.close();

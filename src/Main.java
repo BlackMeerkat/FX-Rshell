@@ -1468,7 +1468,7 @@ public class Main extends Application {
         MenuItem rustPayloads = new MenuItem("Rust - Payloads");
         MenuItem phpPayloads = new MenuItem("PHP - Payloads");
 
-        MenuItem createServer = new MenuItem("Create Server");
+        MenuItem createServer = new MenuItem("Create HTTP Server");
         MenuItem showServer = new MenuItem("Show Server");
 
         newListener.setOnAction(e -> createListenerWindow(stage));
@@ -1607,11 +1607,11 @@ public class Main extends Application {
         Stage stage = new Stage();
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.initOwner(parentStage);
-        stage.setTitle("Create Server");
+        stage.setTitle("Create HTTP Server");
         
         // Définir une taille minimale pour la fenêtre
         stage.setMinWidth(400);
-        stage.setMinHeight(450);
+        stage.setMinHeight(350);
         
         Label ipLabel = new Label("SELECT SERVER IP");
         ipLabel.setStyle("-fx-text-fill: " + DRACULA_CYAN + "; -fx-font-weight: bold;");
@@ -1646,16 +1646,6 @@ public class Main extends Application {
             }
         });
 
-        ToggleGroup serverTypeGroup = new ToggleGroup();
-        RadioButton uploadServer = new RadioButton("Upload Server");
-        uploadServer.setToggleGroup(serverTypeGroup);
-        uploadServer.setSelected(true);
-        applyDraculaRadioButtonStyle(uploadServer);
-
-        RadioButton downloadServer = new RadioButton("Download Server");
-        downloadServer.setToggleGroup(serverTypeGroup);
-        applyDraculaRadioButtonStyle(downloadServer);
-
         Button submitButton = new Button("Create");
         applyDraculaButtonStyle(submitButton);
         submitButton.setPrefWidth(150);
@@ -1664,17 +1654,16 @@ public class Main extends Application {
             String ip = ipComboBox.getValue();
             String port = portField.getText();
             String fileLocation = fileField.getText();
-            boolean isDownloadServer = downloadServer.isSelected();
-            createServer(ip, Integer.parseInt(port), fileLocation, isDownloadServer);
+            createServer(ip, Integer.parseInt(port), fileLocation, true);
             stage.close();
         });
 
-        VBox layout = new VBox(10, ipLabel, ipComboBox, portLabel, portField, fileLabel, fileField, chooseFileButton, uploadServer, downloadServer, submitButton);
+        VBox layout = new VBox(10, ipLabel, ipComboBox, portLabel, portField, fileLabel, fileField, chooseFileButton, submitButton);
         layout.setPadding(new Insets(20));
         layout.setAlignment(Pos.CENTER);
         layout.setStyle("-fx-background-color: " + DRACULA_BACKGROUND + ";");
 
-        Scene scene = new Scene(layout, 400, 450); // Augmenter la taille de la scène
+        Scene scene = new Scene(layout);
         applyDraculaSceneStyle(scene);
         
         stage.setScene(scene);
@@ -1689,7 +1678,7 @@ public class Main extends Application {
         stage.setTitle("Show Servers");
         
         // Définir une taille minimale pour la fenêtre
-        stage.setMinWidth(650);
+        stage.setMinWidth(750);
         stage.setMinHeight(400);
         
         TableView<ServerEntry> serverTable = new TableView<>(serverList);
@@ -1699,9 +1688,13 @@ public class Main extends Application {
         portColumn.setCellValueFactory(new PropertyValueFactory<>("port"));
         portColumn.setPrefWidth(100);
 
-        TableColumn<ServerEntry, String> typeColumn = new TableColumn<>("Type");
-        typeColumn.setCellValueFactory(new PropertyValueFactory<>("type"));
-        typeColumn.setPrefWidth(100);
+        TableColumn<ServerEntry, String> protocolColumn = new TableColumn<>("Protocol");
+        protocolColumn.setCellValueFactory(data -> {
+            ServerEntry server = data.getValue();
+            String protocol = "HTTP";  // Par défaut HTTP pour nos serveurs actuels
+            return new SimpleStringProperty(protocol);
+        });
+        protocolColumn.setPrefWidth(100);
 
         TableColumn<ServerEntry, String> languageColumn = new TableColumn<>("Language");
         languageColumn.setCellValueFactory(new PropertyValueFactory<>("language"));
@@ -1715,7 +1708,7 @@ public class Main extends Application {
         statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
         statusColumn.setPrefWidth(100);
 
-        serverTable.getColumns().addAll(portColumn, typeColumn, languageColumn, locationColumn, statusColumn);
+        serverTable.getColumns().addAll(portColumn, protocolColumn, languageColumn, locationColumn, statusColumn);
 
         Button removeButton = new Button("Remove Server");
         applyDraculaButtonStyle(removeButton);
@@ -1735,7 +1728,7 @@ public class Main extends Application {
         layout.setAlignment(Pos.CENTER);
         layout.setStyle("-fx-background-color: " + DRACULA_BACKGROUND + ";");
 
-        Scene scene = new Scene(layout, 650, 400); // Augmenter la taille de la scène
+        Scene scene = new Scene(layout, 750, 400);
         applyDraculaSceneStyle(scene);
         
         stage.setScene(scene);
@@ -1743,82 +1736,226 @@ public class Main extends Application {
         stage.showAndWait();
     }
 
-    private void createServer(String ip, int port, String fileLocation, boolean isDownloadServer) {
-        try {
-            ProcessBuilder pb;
-            String serverType = isDownloadServer ? "Download" : "Upload";
-            if (isDownloadServer) {
-                String pythonScript = 
-                    "from http.server import BaseHTTPRequestHandler, HTTPServer\n" +
-                    "import os\n" +
-                    "import cgi\n" +
-                    "\n" +
-                    "class DownloadHandler(BaseHTTPRequestHandler):\n" +
-                    "    def do_GET(self):\n" +
-                    "        try:\n" +
-                    "            file_path = '" + fileLocation + "'\n" +
-                    "            if not os.path.exists(file_path):\n" +
-                    "                self.send_error(404, 'File not found')\n" +
-                    "                return\n" +
-                    "            self.send_response(200)\n" +
-                    "            self.send_header('Content-type', 'application/octet-stream')\n" +
-                    "            self.send_header('Content-Disposition', 'attachment; filename=\"' + os.path.basename(file_path) + '\"')\n" +
-                    "            self.end_headers()\n" +
-                    "            with open(file_path, 'rb') as file:\n" +
-                    "                self.wfile.write(file.read())\n" +
-                    "        except Exception as e:\n" +
-                    "            print(f'Error serving file: {str(e)}')\n" +
-                    "            self.send_error(500, 'Internal server error')\n" +
-                    "\n" +
-                    "    def do_POST(self):\n" +
-                    "        try:\n" +
-                    "            file_path = os.path.join('" + fileLocation + "', os.path.basename(self.path))\n" +
-                    "            content_length = int(self.headers['Content-Length'])\n" +
-                    "            print(f'[+] Receiving file: {os.path.basename(self.path)}')\n" +
-                    "            print(f'[+] Content length: {content_length} bytes')\n" +
-                    "\n" +
-                    "            with open(file_path, 'wb') as output_file:\n" +
-                    "                data = self.rfile.read(content_length)\n" +
-                    "                output_file.write(data)\n" +
-                    "\n" +
-                    "            self.send_response(200)\n" +
-                    "            self.send_header('Content-type', 'text/html')\n" +
-                    "            self.end_headers()\n" +
-                    "            self.wfile.write(b'File uploaded successfully')\n" +
-                    "            print(f'[+] File saved as: {file_path}')\n" +
-                    "\n" +
-                    "        except Exception as e:\n" +
-                    "            print(f'[-] Error receiving file: {str(e)}')\n" +
-                    "            self.send_error(500, 'Internal server error')\n" +
-                    "\n" +
-                    "if __name__ == '__main__':\n" +
-                    "    server_address = ('" + ip + "', " + port + ")\n" +
-                    "    try:\n" +
-                    "        httpd = HTTPServer(server_address, DownloadHandler)\n" +
-                    "        print(f'[+] Download/Upload server started on http://" + ip + ":" + port + "')\n" +
-                    "        print(f'[+] Serving directory: " + fileLocation + "')\n" +
-                    "        httpd.serve_forever()\n" +
-                    "    except Exception as e:\n" +
-                    "        print(f'[-] Server error: {str(e)}')\n";
+    private void showDownloadWindow() {
+        Stage stageDownload = new Stage();
+        stageDownload.initModality(Modality.APPLICATION_MODAL);
+        stageDownload.setTitle("Download File");
+        
+        // Définir une taille minimale pour la fenêtre
+        stageDownload.setMinWidth(500);
+        stageDownload.setMinHeight(350);
+        
+        Label serverLabel = new Label("Select HTTP Server");
+        serverLabel.setStyle("-fx-text-fill: " + DRACULA_CYAN + "; -fx-font-weight: bold;");
+        
+        // Filtrer uniquement les serveurs HTTP
+        ComboBox<ServerEntry> serverComboBox = new ComboBox<>();
+        serverComboBox.setItems(FXCollections.observableArrayList(serverList));
+        serverComboBox.setPrefWidth(300);
+        
+        // Améliorer l'affichage des serveurs dans la ComboBox
+        serverComboBox.setCellFactory(param -> new ListCell<ServerEntry>() {
+            @Override
+            protected void updateItem(ServerEntry item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getIp() + ":" + item.getPort() + " - " + item.getFileLocation());
+                }
+            }
+        });
+        
+        serverComboBox.setButtonCell(new ListCell<ServerEntry>() {
+            @Override
+            protected void updateItem(ServerEntry item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getIp() + ":" + item.getPort() + " - " + item.getFileLocation());
+                }
+            }
+        });
+        
+        Label fileLabel = new Label("Remote File Path");
+        fileLabel.setStyle("-fx-text-fill: " + DRACULA_CYAN + "; -fx-font-weight: bold;");
+        
+        TextField filePathField = new TextField();
+        filePathField.setPromptText("Enter the path of the file on the remote system");
+        filePathField.setPrefWidth(300);
+        applyDraculaTextStyle(filePathField);
+        
+        Label saveLabel = new Label("Local Save Location");
+        saveLabel.setStyle("-fx-text-fill: " + DRACULA_CYAN + "; -fx-font-weight: bold;");
+        
+        TextField saveLocationField = new TextField();
+        saveLocationField.setPromptText("Select where to save the file locally");
+        saveLocationField.setPrefWidth(300);
+        applyDraculaTextStyle(saveLocationField);
+        
+        Button chooseSaveLocationButton = new Button("Browse");
+        applyDraculaButtonStyle(chooseSaveLocationButton);
+        
+        chooseSaveLocationButton.setOnAction(e -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Save File As");
+            
+            // Si un nom de fichier distant est spécifié, l'utiliser comme nom par défaut
+            String remoteFile = filePathField.getText().trim();
+            if (!remoteFile.isEmpty()) {
+                String fileName = new File(remoteFile).getName();
+                fileChooser.setInitialFileName(fileName);
+            }
+            
+            File selectedFile = fileChooser.showSaveDialog(stageDownload);
+            if (selectedFile != null) {
+                saveLocationField.setText(selectedFile.getAbsolutePath());
+            }
+        });
+        
+        Button downloadButton = new Button("Download");
+        applyDraculaButtonStyle(downloadButton);
+        downloadButton.setOnAction(e -> {
+            ServerEntry selectedServer = serverComboBox.getSelectionModel().getSelectedItem();
+            String remotePath = filePathField.getText().trim();
+            String localPath = saveLocationField.getText().trim();
+            
+            if (selectedServer != null && !remotePath.isEmpty() && !localPath.isEmpty()) {
+                String command;
+                String os = System.getProperty("os.name").toLowerCase();
                 
-                // Écrire le script dans un fichier temporaire dans le dossier tmp
-                String tempScript = "tmp/download_server_" + port + ".py";
-                try (FileOutputStream fos = new FileOutputStream(tempScript)) {
-                    fos.write(pythonScript.getBytes());
+                if (os.contains("win")) {
+                    command = String.format(
+                        "powershell Invoke-WebRequest -Uri \"http://%s:%d/%s\" -OutFile \"%s\"",
+                        selectedServer.getIp(),
+                        selectedServer.getPort(),
+                        new File(remotePath).getName(),
+                        localPath
+                    );
+                } else {
+                    // Pour Linux/Unix, utiliser wget ou curl
+                    command = String.format(
+                        "if command -v wget > /dev/null; then " +
+                        "wget -O \"%s\" \"http://%s:%d/%s\"; " +
+                        "elif command -v curl > /dev/null; then " +
+                        "curl -o \"%s\" \"http://%s:%d/%s\"; " +
+                        "else echo 'Neither wget nor curl is available'; fi",
+                        localPath, selectedServer.getIp(), selectedServer.getPort(), new File(remotePath).getName(),
+                        localPath, selectedServer.getIp(), selectedServer.getPort(), new File(remotePath).getName()
+                    );
                 }
                 
-                // Exécuter le script Python
-                pb = new ProcessBuilder("python3", tempScript);
-            } else {
-                pb = new ProcessBuilder("python3", "-m", "http.server", String.valueOf(port), "-d", fileLocation);
+                logMessage("[+] Executing download command: " + command);
+                try {
+                    ProcessBuilder pb = new ProcessBuilder();
+                    if (os.contains("win")) {
+                        pb.command("powershell", "-Command", command);
+                    } else {
+                        pb.command("bash", "-c", command);
+                    }
+                    pb.start();
+                    logMessage("[+] Download started");
+                } catch (IOException ex) {
+                    logMessage("[-] Error executing download command: " + ex.getMessage());
+                }
+                stageDownload.close();
             }
+        });
+        
+        // Créer un HBox pour le champ de sauvegarde et le bouton Browse
+        HBox saveLocationBox = new HBox(10);
+        saveLocationBox.getChildren().addAll(saveLocationField, chooseSaveLocationButton);
+        
+        VBox layout = new VBox(15);
+        layout.setPadding(new Insets(20));
+        layout.getChildren().addAll(
+            serverLabel, 
+            serverComboBox,
+            fileLabel, 
+            filePathField,
+            saveLabel,
+            saveLocationBox,
+            downloadButton
+        );
+        layout.setStyle("-fx-background-color: " + DRACULA_BACKGROUND + ";");
+        
+        Scene scene = new Scene(layout);
+        stageDownload.setScene(scene);
+        stageDownload.showAndWait();
+    }
+
+    private void createServer(String ip, int port, String fileLocation, boolean isDownloadServer) {
+        try {
+            String pythonScript = 
+                "from http.server import BaseHTTPRequestHandler, HTTPServer\n" +
+                "import os\n" +
+                "import cgi\n" +
+                "\n" +
+                "class DownloadHandler(BaseHTTPRequestHandler):\n" +
+                "    def do_GET(self):\n" +
+                "        try:\n" +
+                "            file_path = os.path.join('" + fileLocation + "', os.path.basename(self.path))\n" +
+                "            if not os.path.exists(file_path):\n" +
+                "                self.send_error(404, 'File not found')\n" +
+                "                return\n" +
+                "            self.send_response(200)\n" +
+                "            self.send_header('Content-type', 'application/octet-stream')\n" +
+                "            self.send_header('Content-Disposition', 'attachment; filename=\"' + os.path.basename(file_path) + '\"')\n" +
+                "            self.end_headers()\n" +
+                "            with open(file_path, 'rb') as file:\n" +
+                "                self.wfile.write(file.read())\n" +
+                "        except Exception as e:\n" +
+                "            print(f'Error serving file: {str(e)}')\n" +
+                "            self.send_error(500, 'Internal server error')\n" +
+                "\n" +
+                "    def do_POST(self):\n" +
+                "        try:\n" +
+                "            file_path = os.path.join('" + fileLocation + "', os.path.basename(self.path))\n" +
+                "            content_length = int(self.headers['Content-Length'])\n" +
+                "            print(f'[+] Receiving file: {os.path.basename(self.path)}')\n" +
+                "            print(f'[+] Content length: {content_length} bytes')\n" +
+                "\n" +
+                "            with open(file_path, 'wb') as output_file:\n" +
+                "                data = self.rfile.read(content_length)\n" +
+                "                output_file.write(data)\n" +
+                "\n" +
+                "            self.send_response(200)\n" +
+                "            self.send_header('Content-type', 'text/html')\n" +
+                "            self.end_headers()\n" +
+                "            self.wfile.write(b'File uploaded successfully')\n" +
+                "            print(f'[+] File saved as: {file_path}')\n" +
+                "\n" +
+                "        except Exception as e:\n" +
+                "            print(f'[-] Error receiving file: {str(e)}')\n" +
+                "            self.send_error(500, 'Internal server error')\n" +
+                "\n" +
+                "if __name__ == '__main__':\n" +
+                "    server_address = ('" + ip + "', " + port + ")\n" +
+                "    try:\n" +
+                "        httpd = HTTPServer(server_address, DownloadHandler)\n" +
+                "        print(f'[+] HTTP server started on http://" + ip + ":" + port + "')\n" +
+                "        print(f'[+] Serving directory: " + fileLocation + "')\n" +
+                "        print(f'[+] Server supports both upload (POST) and download (GET) operations')\n" +
+                "        httpd.serve_forever()\n" +
+                "    except Exception as e:\n" +
+                "        print(f'[-] Server error: {str(e)}')\n";
+            
+            // Écrire le script dans un fichier temporaire dans le dossier tmp
+            String tempScript = "tmp/http_server_" + port + ".py";
+            try (FileOutputStream fos = new FileOutputStream(tempScript)) {
+                fos.write(pythonScript.getBytes());
+            }
+            
+            // Exécuter le script Python
+            ProcessBuilder pb = new ProcessBuilder("python3", tempScript);
             
             // Rediriger la sortie d'erreur vers la sortie standard
             pb.redirectErrorStream(true);
             
             Process process = pb.start();
             serverProcesses.add(process);
-            serverList.add(new ServerEntry(ip, port, serverType, "Python", fileLocation, "Running"));
+            serverList.add(new ServerEntry(ip, port, "HTTP", "Python", fileLocation, "Running"));
             
             // Créer un thread pour lire la sortie du processus
             new Thread(() -> {
@@ -1833,7 +1970,7 @@ public class Main extends Application {
                 }
             }).start();
             
-            logMessage("[+] Server started on " + ip + ":" + port);
+            logMessage("[+] HTTP server started on " + ip + ":" + port);
         } catch (IOException e) {
             logMessage("[-] Failed to start server: " + e.getMessage());
         }
