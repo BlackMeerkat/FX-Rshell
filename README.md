@@ -161,9 +161,14 @@ sudo apt install gcc-multilib
 
 ---
 
-## 🧱 Building from Source
+## 🧱 Building from github
 
 ```bash
+git clone https://github.com/BlackMeerkat/FX-Rshell.git
+cd FX-Rshell
+chmod +x ./fxrshell-run.sh
+chmod +x ./install-deps.sh
+./install-deps.sh
 ./fxrshell-run.sh
 ```
 
