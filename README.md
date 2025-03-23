@@ -15,14 +15,12 @@
 ![JavaFX](https://img.shields.io/badge/JavaFX-%23ed8b00.svg?style=for-the-badge&logo=java&logoColor=white)
 ![Made With ❤️](https://img.shields.io/badge/Made%20with-%E2%9D%A4-red?style=for-the-badge)
 ![Status](https://img.shields.io/badge/Status-Prototype-orange?style=for-the-badge)
-![License](https://img.shields.io/badge/License-Hacker%20Style-lightgrey?style=for-the-badge)
 
 ---
 
 ## FX-Rshell
 
 **FX-Rshell** is a JavaFX-based reverse shell interface for managing multiple remote shells in a centralized, tabbed UI.  
-The goal? Build a fully custom server-side command line to bypass Windows Defender and reduce detection.
 
 > ⚠️ No OPSEC here — it's dirty, noisy, and triggers all kinds of events on the target machine.
 
