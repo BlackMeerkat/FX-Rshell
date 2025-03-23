@@ -192,7 +192,6 @@ Supports:
 
 ## 📁 Notes
 
-- Payloads saved in `output/`  
 - Compilation feedback shown in UI  
 - No encryption (yet)  
 - Metadata shown per shell  
