@@ -26,6 +26,9 @@ The goal? Build a fully custom server-side command line to bypass Windows Defend
 
 > ⚠️ No OPSEC here — it's dirty, noisy, and triggers all kinds of events on the target machine.
 
+
+![FX-Rshell Screenshot](screenshots/main.png)
+
 ---
 
 ## Features
