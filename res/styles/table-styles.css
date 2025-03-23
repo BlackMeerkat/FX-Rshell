@@ -1,0 +1,156 @@
+/* Dracula theme colors */
+.table-view {
+    -fx-background-color: #282a36;
+    -fx-background-radius: 5px;
+    -fx-fill: #f8f8f2;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #44475a;
+    -fx-background-radius: 5px 5px 0px 0px;
+    -fx-padding: 5px;
+}
+
+.table-view .column-header, .table-view .filler {
+    -fx-background-color: #44475a;
+    -fx-size: 45px;
+    -fx-border-width: 0 0 1 0;
+    -fx-border-color: #6272a4;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #8be9fd;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-alignment: CENTER;
+}
+
+.table-row-cell {
+    -fx-background-color: #282a36;
+    -fx-border-color: #44475a;
+    -fx-table-cell-border-color: #44475a;
+    -fx-padding: 8px;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #2e303e;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: #44475a;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #bd93f9;
+}
+
+.table-row-cell:selected .table-cell {
+    -fx-text-fill: #f8f8f2;
+}
+
+.table-view .table-cell {
+    -fx-text-fill: #f8f8f2;
+    -fx-alignment: CENTER_LEFT;
+    -fx-font-size: 12px;
+    -fx-padding: 8px;
+}
+
+.table-view .scroll-bar:horizontal, .table-view .scroll-bar:vertical {
+    -fx-background-color: #44475a;
+}
+
+.table-view .scroll-bar:horizontal .thumb, .table-view .scroll-bar:vertical .thumb {
+    -fx-background-color: #6272a4;
+    -fx-background-radius: 5px;
+}
+
+.table-view .scroll-bar:horizontal .thumb:hover, .table-view .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: #bd93f9;
+}
+
+/* Style pour les ComboBox */
+.combo-box {
+    -fx-background-color: #44475a;
+    -fx-text-fill: #f8f8f2;
+    -fx-border-color: #6272a4;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+}
+
+.combo-box .list-cell {
+    -fx-background-color: #44475a;
+    -fx-text-fill: #f8f8f2;
+}
+
+.combo-box .list-cell:hover {
+    -fx-background-color: #6272a4;
+}
+
+.combo-box .list-view {
+    -fx-background-color: #282a36;
+    -fx-border-color: #bd93f9;
+}
+
+.combo-box .arrow-button {
+    -fx-background-color: #6272a4;
+}
+
+.combo-box .arrow {
+    -fx-background-color: #8be9fd;
+}
+
+/* Style pour les RadioButton */
+.radio-button {
+    -fx-text-fill: #f8f8f2;
+}
+
+.radio-button .radio {
+    -fx-background-color: #44475a;
+    -fx-border-color: #6272a4;
+    -fx-border-width: 1px;
+    -fx-border-radius: 10px;
+}
+
+.radio-button:selected .radio .dot {
+    -fx-background-color: #ff79c6;
+}
+
+.radio-button:hover .radio {
+    -fx-border-color: #bd93f9;
+}
+
+/* Style pour les boutons */
+.button {
+    -fx-background-color: #bd93f9;
+    -fx-text-fill: #f8f8f2;
+    -fx-font-weight: bold;
+    -fx-padding: 8px 16px;
+    -fx-background-radius: 4px;
+    -fx-border-color: #6272a4;
+    -fx-border-width: 1px;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: #ff79c6;
+    -fx-border-color: #8be9fd;
+}
+
+.button:pressed {
+    -fx-background-color: #6272a4;
+}
+
+/* Style pour les TextField */
+.text-field {
+    -fx-background-color: #44475a;
+    -fx-text-fill: #f8f8f2;
+    -fx-font-family: 'Monospace';
+    -fx-border-color: #6272a4;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+}
+
+.text-field:focused {
+    -fx-border-color: #bd93f9;
+    -fx-border-width: 2px;
+} 
