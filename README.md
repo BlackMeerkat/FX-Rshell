@@ -21,6 +21,7 @@
 ## FX-Rshell
 
 **FX-Rshell** is a JavaFX-based reverse shell interface for managing multiple remote shells in a centralized, tabbed UI.  
+The goal is to use only very basic reverse shell clients, and implement all custom command-line logic on the server side.
 
 > ⚠️ No OPSEC here — it's dirty, noisy, and triggers all kinds of events on the target machine.
 
