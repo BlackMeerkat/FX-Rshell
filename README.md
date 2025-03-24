@@ -204,11 +204,12 @@ Supports:
 ---
 
 ## TODO
-- [] Server / Client encryption
-- [] Cleaning trace command
-- [] Persistance command
-- [] C2 compatiblity
-- [] Obfuscation client tamplate
-- [] Packer for compiled client
-- [] Add more client tamplte (php, js , hta)
+- [ ] Server / Client encryption
+- [ ] Cleaning trace command
+- [ ] Persistance command
+- [ ] C2 compatiblity
+- [ ] Obfuscation client tamplate
+- [ ] Packer for compiled client
+- [ ] Add more client tamplte (php, js , hta)
+- [ ] File Browser
 
