@@ -203,11 +203,12 @@ Supports:
 
 ---
 
-## 🤡 Special Thanks
-
-- That one tweet that inspired simplification  
-- Me, for starting this in 30 min  
-- ChatGPT, for 1h of fuel  
-- Cursor, for doing most of the work  
-- Copilot, for reminding me Cursor > Copilot
+## TODO
+- [] Server / Client encryption
+- [] Cleaning trace command
+- [] Persistance command
+- [] C2 compatiblity
+- [] Obfuscation client tamplate
+- [] Packer for compiled client
+- [] Add more client tamplte (php, js , hta)
 
